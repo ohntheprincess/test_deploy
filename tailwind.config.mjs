@@ -7,9 +7,16 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        prompt: ['"Prompt"', "sans-serif"],
+        kanit: ['"kanit"', "serif"],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        mainblue:"#2973B2",
+        creame:"#F2EFE7",
+        mainred:"#D32F2F"
       },
     },
   },
