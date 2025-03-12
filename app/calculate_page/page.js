@@ -1,72 +1,93 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import NavBar from "../nav/page";
 
 export default function CalculatePage() {
-  const [selectedFormula, setSelectedFormula] = useState("null");
+  const [selectedFormula, setSelectedFormula] = useState("");
   const [inputMode, setInputMode] = useState("carModel");
 
   const [selectedBrand1, setSelectedBrand1] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState("");
-  const [selectedModel, setSelectedModel] = useState("");
   const [selectedModel1, setSelectedModel1] = useState("");
 
   const [carData, setCarData] = useState([]);
   const [fuelTypeData, setFuelTypeData] = useState([]);
-  const [selectedFuel, setSelectedFuel] = useState("");
+
   const [brands1, setBrands1] = useState([]);
   const [models1, setModels1] = useState([]);
-  const [FuelCarData, setFuelCarData] = useState([]);
-
   const [brands2, setBrands2] = useState([]);
   const [models2, setModels2] = useState([]);
+  const [FuelCarData, setFuelCarData] = useState([]);
+
   const [selectedBrand2, setSelectedBrand2] = useState("");
   const [selectedModel2, setSelectedModel2] = useState("");
+
+  const [distanceCompare, setDistanceCompare] = useState(0);
+  const [distance, setDistance] = useState(0);
 
   const [electricityCost, setElectricityCost] = useState(0);
   const [powerConsumption, setPowerConsumption] = useState(0);
   const [batteryChargePercentage, setBatteryChargePercentage] = useState(0);
   const [batteryCapacity, setBatteryCapacity] = useState(0);
   const [chargingCost, setChargingCost] = useState(0);
+  const [EVCarInsurance, setEVCarInsurance] = useState(0);
 
   const [fuelConsumption, setFuelConsumption] = useState(0);
-  const [distance, setDistance] = useState(0);
   const [fuelPrice, setFuelPrice] = useState(0);
+  const [CarTypeOptions, setCarTypeOptions] = useState(0);
+  const [seats, setSeats] = useState(0);
+  const [weight, setWeight] = useState(0);
+  const [carInsurance, setCarInsurance] = useState(0);
 
   const [travelDistance, setTravelDistance] = useState(0);
-  const [longTermCost, setLongTermCost] = useState(0);
-
-  const [selectedYear, setSelectedYear] = useState(null);
 
   const options = { "≤ 5 ปี": 5, "6 ปี": 6, "7 ปี": 7, "8 ปี": 8 };
-  const CarInsuranceOptions = {
-    "ชั้น 1": 10000,
-    "ชั้น 2+": 7500,
-    "ชั้น 3": 2500,
-  };
-  const CarTypeOptions = {
-    "Eco car": 1300,
-    "City car": 1500,
-    "Mid-Size Car": 1800,
-    "Luxury Car": 2500,
-  };
-  const CarInsuranceOptionsEv = {
-    "ชั้น 1": 28000,
-    "ชั้น 2+": 7500,
-    "ชั้น 3": 2500,
-  };
-  const CarTypeOptionsEv = {
-    "Eco car": 1300,
-    "City car": 1500,
-    "Mid-Size Car": 1800,
-    "Luxury Car": 2500,
-  };
-  const [distanceCompare, setDistanceCompare] = useState(0);
+  const [selectedYear, setSelectedYear] = useState(0);
 
-  const [selectedCarInsurance, setSelectedCarInsurance] = useState(null);
-  const [selectedCarTypeOptions, setSelectedCarTypeOptions] = useState(null);
-  const selectedCC = CarTypeOptions[selectedCarTypeOptions];
-  const selectedCinsurance = CarInsuranceOptions[selectedCarInsurance];
+  const [totalCost, setTotalCost] = useState(0);
+  const [totalEVCost, setTotalEVCost] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/allCar")
+      .then((res) => res.json())
+      .then((car) => {
+        if (Array.isArray(car)) {
+          setCarData(car);
+          console.log("Fetched fuel car data:", car);
+
+          const uniqueBrands1 = [...new Set(car.map((car) => car.Brand))];
+          setBrands1(uniqueBrands1);
+        }
+      })
+      .catch((error) => console.error("Error fetching fuel car data:", error));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/fuelType")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Fetched fuelTypeData:", data);
+        if (Array.isArray(data)) {
+          setFuelTypeData(data);
+        }
+      })
+      .catch((error) => console.error("Error fetching data:", error));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/allFuelCar")
+      .then((res) => res.json())
+      .then((fuelCar) => {
+        if (Array.isArray(fuelCar)) {
+          setFuelCarData(fuelCar);
+          console.log("Fetched fuel car data:", fuelCar);
+
+          const uniqueBrands2 = [...new Set(fuelCar.map((car) => car.Brand))];
+          setBrands2(uniqueBrands2);
+        }
+      })
+      .catch((error) => console.error("Error fetching fuel car data:", error));
+  }, []);
 
   const calculateElectricityUsed = () => {
     if (travelDistance > 0 && powerConsumption > 0 && electricityCost > 0) {
@@ -82,8 +103,6 @@ export default function CalculatePage() {
       powerConsumption > 0 && electricityCost > 0
         ? (distance / 100) * powerConsumption * electricityCost
         : 0;
-
-    console.log(calculatedElectricCost);
     return calculatedElectricCost;
   };
 
@@ -91,8 +110,6 @@ export default function CalculatePage() {
     const calculatedFuelLiter =
       fuelConsumption !== 0 ? distance / fuelConsumption : 0;
     const calculatedFuelCost = calculatedFuelLiter * fuelPrice;
-    console.log(calculatedFuelCost);
-    console.log("fuelConsumption" + fuelConsumption + "distance" + distance);
     return calculatedFuelCost;
   };
   const calculateCarTax = (cc) => {
@@ -108,30 +125,116 @@ export default function CalculatePage() {
 
     return tax;
   };
+  const calculateEVCarTax = (seats, weight) => {
+    let tax = 0;
+    if (seats < 7) {
+      if (weight <= 500) {
+        tax = 30;
+      } else if (weight >= 501 && weight <= 750) {
+        tax = 60;
+      } else if (weight >= 751 && weight <= 1000) {
+        tax = 90;
+      } else if (weight >= 1001 && weight <= 1250) {
+        tax = 160;
+      } else if (weight >= 1251 && weight <= 1500) {
+        tax = 200;
+      } else if (weight >= 1501 && weight <= 1750) {
+        tax = 260;
+      } else if (weight >= 1751 && weight <= 2000) {
+        tax = 330;
+      } else if (weight >= 2001 && weight <= 2500) {
+        tax = 380;
+      } else if (weight >= 2501 && weight <= 3000) {
+        tax = 440;
+      } else if (weight >= 3001 && weight <= 3500) {
+        tax = 480;
+      } else if (weight >= 3501 && weight <= 4000) {
+        tax = 520;
+      } else if (weight >= 4001 && weight <= 4500) {
+        tax = 560;
+      } else if (weight >= 4501 && weight <= 5000) {
+        tax = 600;
+      } else if (weight >= 5001 && weight <= 6000) {
+        tax = 640;
+      } else if (weight >= 6001 && weight <= 7000) {
+        tax = 680;
+      } else {
+        tax = 720;
+      }
+    } else {
+      if (weight <= 500) {
+        tax = 15;
+      } else if (weight >= 501 && weight <= 750) {
+        tax = 30;
+      } else if (weight >= 751 && weight <= 1000) {
+        tax = 45;
+      } else if (weight >= 1001 && weight <= 1250) {
+        tax = 80;
+      } else if (weight >= 1251 && weight <= 1500) {
+        tax = 100;
+      } else if (weight >= 1501 && weight <= 1750) {
+        tax = 130;
+      } else if (weight >= 1751 && weight <= 2000) {
+        tax = 160;
+      } else if (weight >= 2001 && weight <= 2500) {
+        tax = 190;
+      } else if (weight >= 2501 && weight <= 3000) {
+        tax = 220;
+      } else if (weight >= 3001 && weight <= 3500) {
+        tax = 240;
+      } else if (weight >= 3501 && weight <= 4000) {
+        tax = 260;
+      } else if (weight >= 4001 && weight <= 4500) {
+        tax = 280;
+      } else if (weight >= 4501 && weight <= 5000) {
+        tax = 300;
+      } else if (weight >= 5001 && weight <= 6000) {
+        tax = 320;
+      } else if (weight >= 6001 && weight <= 7000) {
+        tax = 340;
+      } else {
+        tax = 360;
+      }
+    }
 
-  const calculateLongTermCost = () => {
-    // คำนวณค่าน้ำมัน
-    const fuelCost = (distanceCompare / fuelConsumption) * fuelPrice;
-
-    const totalFuelCost = fuelCost * 365 * selectedYear;
-
-    // หาค่า cc ของรถที่เลือก
-    const selectedCC = CarTypeOptions[selectedCarTypeOptions];
-
-    // คำนวณภาษีรถยนต์ต่อปี
-    const carTaxPerYear = calculateCarTax(selectedCC);
-    const carInsurance = CarInsuranceOptions[selectedCarInsurance];
-    // คำนวณค่าใช้จ่ายรวม
-    const totalCost =
-      totalFuelCost + carTaxPerYear * selectedYear + carInsurance;
-
-    return totalCost;
+    return tax;
   };
 
-  const totalCost = calculateLongTermCost();
-  console.log(
-    `ค่าใช้จ่ายทั้งหมดที่ต้องจ่าย: ${totalCost.toLocaleString()} บาท`
-  );
+  useEffect(() => {
+    const calculateFuelCarLongTermCost = () => {
+      const calculatedFuelLiter =
+        fuelConsumption !== 0 ? distanceCompare / fuelConsumption : 0;
+      const fuelCost = calculatedFuelLiter * fuelPrice;
+      const totalFuelCost = fuelCost * 365 * selectedYear;
+      const carTaxPerYear = calculateCarTax(CarTypeOptions);
+      const totalCost =
+        totalFuelCost +
+        carTaxPerYear * selectedYear * selectedYear +
+        carInsurance;
+
+      return totalCost;
+    };
+
+    setTotalCost(calculateFuelCarLongTermCost());
+  }, [fuelConsumption, distanceCompare, fuelPrice, selectedYear, carInsurance]);
+
+  useEffect(() => {
+    const calculateEVCarLongTermCost = () => {
+      const calculatedElectricCost =
+        powerConsumption > 0 && electricityCost > 0
+          ? (distanceCompare / 100) * powerConsumption * electricityCost
+          : 0;
+      const totalElectricCost = calculatedElectricCost * 365 * selectedYear;
+      const evCarTaxPerYear = calculateEVCarTax(seats, weight) * selectedYear;
+      const totalEVCarInsurance = EVCarInsurance * selectedYear;
+      console.log("totalEVCarInsurance" + totalEVCarInsurance);
+
+      const totalCost =
+        totalElectricCost + evCarTaxPerYear + totalEVCarInsurance;
+      return totalCost;
+    };
+    setTotalEVCost(calculateEVCarLongTermCost());
+  }, [powerConsumption, electricityCost, selectedYear, distanceCompare]);
 
   const handleBrandChange2 = (event) => {
     setSelectedBrand2(event.target.value);
@@ -141,47 +244,6 @@ export default function CalculatePage() {
   const handleModelChange2 = (event) => {
     setSelectedModel2(event.target.value);
   };
-  useEffect(() => {
-    fetch("http://localhost:8080/api/findall")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setCarData(data);
-          console.log("Fetched data:", data);
-
-          const uniqueBrands1 = [...new Set(data.map((car) => car.brand))];
-          setBrands1(uniqueBrands1);
-        }
-      })
-      .catch((error) => console.error("Error fetching car data:", error));
-  }, []);
-
-  useEffect(() => {
-    fetch("http://localhost:8080/api/allfueltype")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Fetched fuelTypeData:", data);
-        if (Array.isArray(data)) {
-          setFuelTypeData(data);
-        }
-      })
-      .catch((error) => console.error("Error fetching data:", error));
-  }, []);
-
-  useEffect(() => {
-    fetch("http://localhost:8080/api/fuelcarData")
-      .then((res) => res.json())
-      .then((fuelCar) => {
-        if (Array.isArray(fuelCar)) {
-          setFuelCarData(fuelCar);
-          console.log("Fetched fuel car data:", fuelCar);
-
-          const uniqueBrands2 = [...new Set(fuelCar.map((car) => car.brand))];
-          setBrands2(uniqueBrands2);
-        }
-      })
-      .catch((error) => console.error("Error fetching fuel car data:", error));
-  }, []);
 
   const handleModelChange1 = (event) => {
     setSelectedModel1(event.target.value);
@@ -193,9 +255,9 @@ export default function CalculatePage() {
 
   useEffect(() => {
     if (selectedModel1) {
-      const selectedCar = carData.find((car) => car.model === selectedModel1);
+      const selectedCar = carData.find((car) => car.Model === selectedModel1);
       if (selectedCar) {
-        setBatteryCapacity(selectedCar.battery || 0);
+        setBatteryCapacity(selectedCar.Battery || 0);
       }
     }
   }, [selectedModel1, carData]);
@@ -203,8 +265,8 @@ export default function CalculatePage() {
   useEffect(() => {
     if (selectedBrand1) {
       const filteredModels = carData
-        .filter((car) => car.brand === selectedBrand1)
-        .map((car) => car.model);
+        .filter((car) => car.Brand === selectedBrand1)
+        .map((car) => car.Model);
       setModels1([...new Set(filteredModels)]);
     } else {
       setModels1([]);
@@ -213,8 +275,8 @@ export default function CalculatePage() {
   useEffect(() => {
     if (selectedBrand2) {
       const filteredModels = FuelCarData.filter(
-        (car) => car.brand === selectedBrand2
-      ).map((car) => car.model);
+        (car) => car.Brand === selectedBrand2
+      ).map((car) => car.Model);
       setModels2([...new Set(filteredModels)]);
     } else {
       setModels2([]);
@@ -223,27 +285,31 @@ export default function CalculatePage() {
 
   useEffect(() => {
     if (selectedModel1) {
-      const selectedCar = carData.find((car) => car.model === selectedModel1);
+      const selectedCar = carData.find((car) => car.Model === selectedModel1);
       if (selectedCar) {
-        setBatteryCapacity(selectedCar.battery || 0);
+        setBatteryCapacity(selectedCar.Battery || 0);
         const efficiency =
-          selectedCar.efficiency || selectedCar.PowerConsumption || 0;
+          selectedCar.Efficiency || selectedCar.PowerConsumption || 0;
         setPowerConsumption(efficiency / 10);
+        setSeats(selectedCar.Seats || 0);
+        setWeight(selectedCar.Weight || 0);
+        setEVCarInsurance(selectedCar.Insurance_Price || 0);
       }
     }
   }, [selectedModel1]);
   useEffect(() => {
     if (selectedModel2) {
       const selectedCar = FuelCarData.find(
-        (car) => car.model === selectedModel2
+        (car) => car.Model === selectedModel2
       );
       if (selectedCar) {
-        const fuelEconomy = selectedCar.fuelEconomy * 0.425144 || 0;
-        console.log(selectedCar.fuelEconomy);
+        const fuelEconomy = selectedCar.Fuel_Economy || 0;
         setFuelConsumption(fuelEconomy);
+        const insurance = selectedCar.Insurance_Price || 0;
+        setCarInsurance(insurance);
       }
     }
-  }, [selectedModel2, FuelCarData]);
+  }, [selectedModel2]);
   const calculateChargingCost = () => {
     if (
       batteryCapacity > 0 &&
@@ -256,20 +322,19 @@ export default function CalculatePage() {
     }
     return 0;
   };
-  useEffect(() => {
-    console.log("carData updated:", carData);
-    console.log("uniqueBrands1:", brands1);
-    console.log("uniqueBrands2:", brands2);
-    console.log("moedl2:", models2);
-    console.log("powerconsumption:", powerConsumption);
-  }, [carData]);
 
   const resetManualInputs = () => {
     setSelectedBrand1("");
+    setSelectedBrand2("");
     setBatteryCapacity(0);
     setPowerConsumption(0);
     setElectricityCost(0);
+    setFuelConsumption(0);
     setBatteryChargePercentage(0);
+    setElectricityCost(0);
+    setTotalCost(0);
+    setTotalEVCost(0);
+    setFuelPrice("");
     setInputMode("carModel");
   };
 
@@ -281,7 +346,7 @@ export default function CalculatePage() {
     setBatteryChargePercentage(0);
     setTravelDistance(0);
     setSelectedBrand2("");
-    setFuelConsumption();
+    setFuelConsumption(0);
   };
   const closeModal = () => {
     setSelectedFormula(null);
@@ -296,6 +361,8 @@ export default function CalculatePage() {
   };
   return (
     <div className="font-prompt bg-white h-screen w-full  top-0 left-0 fixed">
+      <NavBar />
+
       <div>
         <h1 className="text-center text-2xl mt-24 text-mainblue font-bold">
           สูตรคำนวณที่เกี่ยวข้องกับรถยนต์ไฟฟ้า
@@ -304,7 +371,7 @@ export default function CalculatePage() {
       <div className="grid grid-cols-2 text-gray-400 align-middle mt-6">
         <div className="flex justify-end">
           <div
-            className="bg-white border shadow-lg m-2 rounded-2xl w-3/4 p-12
+            className="transition-transform duration-300 hover:scale-110 hover:text-gray-500 bg-white border shadow-lg m-2 rounded-2xl w-3/4 p-12
          text-center align-middle"
             onClick={() => setSelectedFormula("cargingCostByPercent")}
           >
@@ -333,7 +400,7 @@ export default function CalculatePage() {
         </div>
         <div className="flex justify-end flex-wrap">
           <div
-            className="bg-white border shadow-lg m-2 rounded-2xl w-3/4 p-12
+            className="transition-transform duration-300 hover:scale-110 hover:text-gray-500 bg-white border shadow-lg m-2 rounded-2xl w-3/4 p-12
          text-center align-middle"
             onClick={() => setSelectedFormula("compare")}
           >
@@ -370,21 +437,16 @@ export default function CalculatePage() {
         </div>
       </div>
       {selectedFormula === "MaintenanceCostComparison" && (
-        <div className="z-30 fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center font-prompt">
+        <div className="z-1 fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center font-prompt">
           <div
-            className="bg-white px-7 py-6 rounded-lg shadow-lg w-full mx-4 overflow-y-auto"
+            className="bg-white px-7 py-6 rounded-lg shadow-lg w-4/5 mx-4 overflow-y-auto"
             style={{ maxHeight: "90vh" }}
           >
             {" "}
-            <h6 className="text-xl font-semibold text-mainblue  text-center">
-              สูตรการคำนวณค่าไฟฟ้าสำหรับการเดินทาง
+            <h6 className="text-xl font-semibold text-mainblue mb-4  text-center">
+              สูตรเปรียบเทียบค่าใช้จ่ายระยะยาว
             </h6>
-            {/* <p className="text-center text-gray-400 mb-4">
-              *ค่าคำนวณนี้เป็นการประมาณการ
-              กรุณาตรวจสอบข้อมูลเพิ่มเติมเพื่อความแม่นยำ
-              ค่าบำรุงรักษารถยนต์น้ำมัน ประมาณ15,000
-            </p> */}
-            <div className="grid grid-cols-2 gap-4 border rounded p-3 mb-2">
+            <div className="grid grid-cols-2 gap-4 border rounded p-3 mb-4">
               <div>
                 <p className="text-gray-600 font-bold">ระยะเวลาในการใช้รถ</p>
                 {Object.entries(options).map(([option, year], index) => (
@@ -405,14 +467,14 @@ export default function CalculatePage() {
               <div>
                 <label
                   htmlFor="distance"
-                  className="block text-gray-600 font-bold"
+                  className="block text-gray-700 font-bold"
                 >
                   ระยะทางที่ขับโดยเฉลี่ยต่อวัน
                 </label>
                 <input
                   id="distance"
                   type="number"
-                  className="border px-2 py-1 rounded w-full mt-2"
+                  className="border px-2 py-1 rounded w-full mt-2 text-gray-600"
                   value={distanceCompare}
                   onChange={(e) => setDistanceCompare(e.target.value)}
                 />
@@ -448,7 +510,10 @@ export default function CalculatePage() {
                     <select
                       id="model-select"
                       value={selectedModel2}
-                      onChange={handleModelChange2}
+                      onChange={(event) => {
+                        handleModelChange2(event);
+                        calculateFuelCost();
+                      }}
                       disabled={!selectedBrand2}
                       className="border rounded-md p-2 w-full h-10 my-2 text-black"
                     >
@@ -461,54 +526,26 @@ export default function CalculatePage() {
                     </select>
                   </div>
                 </div>
-                <label className="block text-gray-600 my-2">
-                  ราคาน้ำมันต่อลิตร
-                </label>
-                <select
-                  value={fuelPrice}
-                  onChange={(e) => {
-                    console.log("Selected fuel price:", e.target.value);
-                    setFuelPrice(Number(e.target.value));
-                  }}
-                  className="border p-2 rounded-md w-full"
-                >
-                  <option value="">เลือกประเภทเชื้อเพลิง</option>
-                  {fuelTypeData.map((fuel) => (
-                    <option key={fuel.id} value={fuel.price}>
-                      {fuel.fuelType} - {fuel.price} บาท/ลิตร
-                    </option>
-                  ))}
-                </select>
-                <p className="my-2">ประเภทประกัน</p>
-                {Object.entries(CarInsuranceOptions).map(
-                  ([option, price], index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedCarInsurance(option)}
-                      className={`px-2 rounded-lg mx-2 transition-colors duration-300  ${
-                        selectedCarInsurance === option
-                          ? "bg-white text-mainblue border border-mainblue"
-                          : "bg-mainblue text-white"
-                      }`}
-                    >
-                      {option} {price.toLocaleString()}
-                    </button>
-                  )
-                )}
-                <p className="my-2">ประเภทรถยนต์</p>
-                {Object.entries(CarTypeOptions).map(([option, cc], index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedCarTypeOptions(option)}
-                    className={`px-2 rounded-lg mx-2 transition-colors duration-300 ${
-                      selectedCarTypeOptions === option
-                        ? "bg-white text-mainblue border border-mainblue"
-                        : "bg-mainblue text-white"
-                    }`}
+                <div className="mx-2">
+                  <label className="block text-gray-600 my-2">
+                    ราคาน้ำมันต่อลิตร
+                  </label>
+                  <select
+                    value={fuelPrice}
+                    onChange={(e) => {
+                      console.log("Selected fuel price:", e.target.value);
+                      setFuelPrice(Number(e.target.value));
+                    }}
+                    className="border p-2 rounded-md w-full"
                   >
-                    {option}
-                  </button>
-                ))}
+                    <option value="">เลือกประเภทเชื้อเพลิง</option>
+                    {fuelTypeData.map((fuel) => (
+                      <option key={fuel.id} value={fuel.price}>
+                        {fuel.fuel_type} - {fuel.price} บาท/ลิตร
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div>
                 <div className="font-bold">
@@ -567,13 +604,13 @@ export default function CalculatePage() {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-6 mt-3">
+            <div className="grid grid-cols-2 gap-6 mt-6">
               <div className="flex justify-center">
                 <div className="mt-2 border border-gray-300 rounded-lg p-2 w-1/2 bg-mainblue text-center shadow-md">
                   <h6 className="text-base text-white mb-2 font-prompt">
                     ค่าใช้จ่ายรถยนต์น้ำมัน
                     <p className="text-lg text-mainblue bg-white rounded-lg">
-                      {totalCost} บาท
+                      {totalCost.toFixed(2)} บาท
                     </p>
                   </h6>
                 </div>
@@ -583,7 +620,7 @@ export default function CalculatePage() {
                   <h6 className="text-base text-white mb-2 font-prompt">
                     ค่าใช้จ่ายรถยนต์ไฟฟ้า
                     <p className="text-lg text-mainblue bg-white rounded-lg">
-                      {calculateFuelCost().toFixed(2)} บาท
+                      {totalEVCost.toFixed(2)} บาท
                     </p>
                   </h6>
                 </div>
@@ -608,10 +645,9 @@ export default function CalculatePage() {
               className="bg-white px-7 py-4 rounded-lg shadow-lg max-w-4xl w-11/12"
               style={{ maxHeight: "90vh", overflowY: "auto" }}
             >
-              <h6 className="text-xl font-semibold text-mainblue mb-4 text-center">
+              <h6 className="text-xl font-semibold text-mainblue my-4 text-center">
                 สูตรการคำนวณค่าไฟฟ้าสำหรับการเดินทาง
               </h6>
-              {/* ปุ่มสลับสำหรับเลือกระหว่าง "เลือกรุ่นรถ" กับ "พิมพ์ข้อมูลด้วยตนเอง" */}
               <div className="flex items-center justify-center mb-6">
                 <button
                   className={`px-4 py-2 rounded-l ${
@@ -643,13 +679,10 @@ export default function CalculatePage() {
                 </button>
               </div>
 
-              {/* Layout แบบ 2 คอลัมน์ */}
               <div className="grid grid-cols-2 gap-6">
-                {/* คอลัมน์ซ้าย: เลือกรถ */}
                 <div className="pr-4">
                   {inputMode === "carModel" ? (
                     <div>
-                      {/* ส่วน UI สำหรับเลือกรุ่นรถ */}
                       <label className="block text-gray-600">
                         เลือกยี่ห้อรถ
                       </label>
@@ -689,7 +722,6 @@ export default function CalculatePage() {
                     </div>
                   ) : (
                     <div>
-                      {/* ระบุข้อมูลด้วยตนเอง */}
                       <div>
                         <label className="block text-gray-600">
                           ความจุของbattery
@@ -707,7 +739,6 @@ export default function CalculatePage() {
                   )}
                 </div>
 
-                {/* คอลัมน์ขวา: ข้อมูลการคำนวณ */}
                 <div>
                   <div>
                     <label className="block text-gray-600">
@@ -751,11 +782,7 @@ export default function CalculatePage() {
                 </div>
               </div>
 
-              {/* ผลการคำนวณ */}
-              {/* <p className="mt-6 font-semibold text-gray-800">
-              ค่าไฟที่ใช้ในการเดินทาง: {calculateChargingCost().toFixed(2)} บาท
-            </p> */}
-              <div className="mt-5 flex items-center justify-center">
+              <div className="mt-4 flex items-center justify-center">
                 <div className="border border-gray-300 rounded-lg p-2 w-1/2 bg-mainblue text-center shadow-md">
                   <h6 className="text-base text-white mb-2 font-prompt">
                     ค่าชาร์จรถยนต์ไฟฟ้า
@@ -766,7 +793,6 @@ export default function CalculatePage() {
                 </div>
               </div>
 
-              {/* ปุ่มปิด */}
               <div className="flex justify-center mt-6">
                 <button
                   className="text-white bg-mainred hover:bg-red-600 px-4 py-2 rounded"
@@ -966,7 +992,7 @@ export default function CalculatePage() {
                 </div>
               </div>
 
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center mt-6">
                 <button
                   className="text-white bg-red-500 hover:bg-mainred px-4 py-2 rounded"
                   onClick={closeModal}
@@ -982,12 +1008,12 @@ export default function CalculatePage() {
       )}
       {selectedFormula === "compare" ? (
         <div>
-          <div className="z-30 fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center font-prompt">
+          <div className="z-1 fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center font-prompt">
             <div
               className="bg-white px-6 py-4 rounded-lg shadow-lg w-4/5 overflow-y-auto"
               style={{ maxHeight: "90vh" }}
             >
-              <h6 className="text-xl font-semibold text-mainblue mb-4 text-center">
+              <h6 className="text-xl font-semibold text-mainblue my-4 text-center">
                 สูตรเปรียบเทียบค่าใช้จ่ายในการเดินทางด้วยรถยนต์ไฟฟ้าและรถยนต์น้ำมัน
               </h6>
               <div className="flex flex-col justify-center items-center mb-4">
@@ -996,8 +1022,8 @@ export default function CalculatePage() {
                 </label>
                 <input
                   type="number"
-                  value={distance} // ปรับชื่อ state เป็น distance เพื่อแสดงระยะทาง
-                  onChange={(e) => setDistance(Number(e.target.value))} // ใช้ setDistance แทน setElectricityCost
+                  value={distance}
+                  onChange={(e) => setDistance(Number(e.target.value))}
                   className="mt-2 p-2 w-1/2 border border-gray-300 rounded text-black"
                   placeholder="กรุณากรอกระยะทาง"
                 />
@@ -1084,7 +1110,6 @@ export default function CalculatePage() {
                     การเดินทางด้วยรถยนต์น้ำมัน
                   </p>
                   <div>
-                    {/* ส่วน UI สำหรับเลือกรุ่นรถ */}
                     <label className="block text-gray-600">เลือกยี่ห้อรถ</label>
                     <select
                       id="brand-select"
@@ -1136,15 +1161,6 @@ export default function CalculatePage() {
                       />
                     </div>
                     <div className="mt-2 mx-2 text-gray-600">
-                      {/* <label className="block text-gray-600 my-2">
-                        ราคาน้ำมันต่อลิตร
-                      </label>
-                      <input
-                        type="number"
-                        value={fuelPrice}
-                        onChange={(e) => setFuelPrice(Number(e.target.value))}
-                        className="p-2 w-full border border-gray-300 rounded text-black"
-                      /> */}
                       <label className="block text-gray-600 my-2">
                         ราคาน้ำมันต่อลิตร
                       </label>
@@ -1159,7 +1175,7 @@ export default function CalculatePage() {
                         <option value="">เลือกประเภทเชื้อเพลิง</option>
                         {fuelTypeData.map((fuel) => (
                           <option key={fuel.id} value={fuel.price}>
-                            {fuel.fuelType} - {fuel.price} บาท/ลิตร
+                            {fuel.fuel_type} - {fuel.price} บาท/ลิตร
                           </option>
                         ))}
                       </select>
@@ -1168,7 +1184,6 @@ export default function CalculatePage() {
                 </div>
               </div>
 
-              {/* ผลการคำนวณ */}
               <div className="grid grid-cols-2 gap-6 mt-3">
                 <div className="flex justify-center">
                   <div className="mt-2 border border-gray-300 rounded-lg p-2 w-1/2 bg-mainblue text-center shadow-md">
@@ -1192,7 +1207,6 @@ export default function CalculatePage() {
                 </div>
               </div>
 
-              {/* ปุ่มปิด */}
               <div className="flex justify-center mt-6">
                 <button
                   className="text-white bg-mainred hover:bg-red-600 px-4 py-2 rounded"

@@ -6,22 +6,21 @@ export default function Evcardata() {
   const router = useRouter();
 
   const [data, setData] = useState([]);
-  const [selectedBrand, setSelectedBrand] = useState("");
-  const [selectedCar, setSelectedCar] = useState(null);
   const [allbrand, setAllBrand] = useState([]);
   const [brand, setBrand] = useState("");
 
+  const [selectedBrand, setSelectedBrand] = useState("");
+  const [selectedCar, setSelectedCar] = useState(null);
   const [selectedCarID, setSelectedCarID] = useState([]);
 
-  const [isModalOpen, setIsModalOpen] = useState(true);
   const [isCompared, setIsCompared] = useState(false);
 
   const carsPerPage = 4;
   const [currentPage, setCurrentPage] = useState(1);
 
   const filteredData = selectedBrand
-    ? data.filter((car) => car.brand === selectedBrand)
-    : data.filter((item) => brand === "" || item.brand === brand);
+    ? data.filter((car) => car.Brand === selectedBrand)
+    : data.filter((item) => brand === "" || item.Brand === brand);
 
   const indexOfLastCar = currentPage * carsPerPage;
   const indexOfFirstCar = indexOfLastCar - carsPerPage;
@@ -34,16 +33,7 @@ export default function Evcardata() {
       buttonRef.current.click();
     }
   }, []);
-  const clickCompareCar = () => {
-    document
-      .getElementById("section-comparefromdata")
-      .scrollIntoView({ behavior: "smooth" });
-  };
-  const clickCarData = () => {
-    document
-      .getElementById("section-cardata")
-      .scrollIntoView({ behavior: "smooth" });
-  };
+
   useEffect(() => {
     if (isCompared) {
       setTimeout(() => {
@@ -54,32 +44,35 @@ export default function Evcardata() {
       }, 100);
     }
   }, [isCompared]);
-  // useEffect(() => {
-  //   if (selectedModel && selectedModel1) {
-  //     router.push(
-  //       `/compare_page?model1=${encodeURIComponent(
-  //         selectedModel
-  //       )}&model2=${encodeURIComponent(selectedModel1)}`
-  //     );
-  //   }
-  // }, [selectedModel, selectedModel1, router]);
+
   useEffect(() => {
-    fetch("http://localhost:8080/api/findall")
-      .then((res) => res.json())
+    fetch("/api/allCar")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
         setData(data);
-        console.log("Fetched data:", data);
+        console.log("Fetched car data:", data);
       })
-      .catch((error) => console.error("Error fetching data:", error));
+      .catch((error) => console.error("Error fetching car data:", error));
 
-    fetch("http://localhost:8080/api/AllBrand")
-      .then((res) => res.json())
+    fetch("/api/allBrand")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((allbrand) => {
         setAllBrand(allbrand);
-        console.log("Fetched brand:", allbrand);
+        console.log("Fetched brand data:", allbrand);
       })
-      .catch((error) => console.error("Error fetching brand:", error));
+      .catch((error) => console.error("Error fetching brand data:", error));
   }, []);
+
   useEffect(() => {
     console.log(selectedBrand);
   }, [selectedBrand]);
@@ -92,21 +85,22 @@ export default function Evcardata() {
   };
   const handleSelectBrand = (brand) => {
     setSelectedBrand(brand);
+    setCurrentPage(1);
   };
   const handleCheckboxChange = (car) => (event) => {
     setSelectedCarID((prev) => {
       const updatedPrev = prev || [];
       if (event.target.checked) {
-        if (updatedPrev.length >= 4) return updatedPrev;
+        if (updatedPrev.length >= 3) return updatedPrev;
         return [...updatedPrev, car];
       } else {
-        return updatedPrev.filter((c) => c.id !== car.id);
+        return updatedPrev.filter((c) => c.Model_ID !== car.Model_ID);
       }
     });
   };
   const handleDeSelectCarID = (car) => {
     setSelectedCarID((prev) => {
-      const updatedList = prev.filter((c) => c.model_ID !== car.model_ID);
+      const updatedList = prev.filter((c) => c.Model_ID !== car.Model_ID);
 
       if (updatedList.length === 1 || updatedList.length === 0) {
         setIsCompared(false);
@@ -125,22 +119,14 @@ export default function Evcardata() {
   };
 
   const brandOptions =
-    data.length > 0 ? [...new Set(data.map((item) => item.brand))] : [];
+    data.length > 0 ? [...new Set(data.map((item) => item.Brand))] : [];
   return (
     <div
       className="min-h-screen bg-white text-black font-prompt pt-12"
       id="section-cardata"
     >
-      {/* <h1 className="font-prompt bg-mainblue mb-4 text-white p-3 text-xl text-center">
-        ข้อมูลรถยนต์ไฟฟ้า
-      </h1> */}
       <div className="grid grid-cols-4 p-4">
         <div className="ml-6">
-          {/* <input
-            type="text"
-            placeholder="ค้นหารถยนต์ไฟฟ้า"
-            className="p-2 rounded-lg border-2 items-end"
-          ></input> */}
           <div className="bg-white h-screen">
             <div className="flex flex-col items-center py-6 overflow-y-auto h-[600px] scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
               <button
@@ -154,16 +140,16 @@ export default function Evcardata() {
               <div className="flex flex-col w-full gap-2">
                 {allbrand.map((brand) => (
                   <button
-                    key={brand.id}
-                    onClick={() => handleSelectBrand(brand.name)}
+                    key={`${brand.Brand_ID}-${brand.BrandImg}`}
+                    onClick={() => handleSelectBrand(brand.Brand)}
                     className="flex flex-row justify-center items-center bg-white text-black p-3 rounded-lg hover:shadow-md transition-all"
                   >
                     <img
-                      src={brand.logoImg}
-                      alt={brand.name}
+                      src={brand.BrandImg}
+                      alt={brand.Brand}
                       className="w-[40px] h-[30px] object-contain"
                     />
-                    <p className="text-center mx-2">{brand.name}</p>
+                    <p className="text-center mx-2">{brand.Brand}</p>
                   </button>
                 ))}
               </div>
@@ -181,7 +167,7 @@ export default function Evcardata() {
             </h1>
           )}
           {currentCars.map((car) => (
-            <div key={car.id}>
+            <div key={car.Model_ID}>
               <div className="relative w-full h-auto">
                 <table className="w-full text-lg text-center text-gray-500 table-fixed">
                   <tbody>
@@ -192,11 +178,11 @@ export default function Evcardata() {
                           type="checkbox"
                           onChange={handleCheckboxChange(car)}
                           checked={selectedCarID.some(
-                            (c) => c.model_ID === car.model_ID
+                            (c) => c.Model_ID === car.Model_ID
                           )}
                           className="absolute top-7 left-10 w-4 h-4 bg-gray-100 border-gray-300 rounded-sm focus:ring-mainblue dark:focus:ring-mainblue dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                           disabled={
-                            !selectedCarID.includes(car.id) &&
+                            !selectedCarID.includes(car.Model_ID) &&
                             selectedCarID.length >= 4
                           }
                         />
@@ -204,21 +190,24 @@ export default function Evcardata() {
                           checkbox
                         </label>
                         <img
-                          src={car.ev_Image_URL}
+                          src={car.EV_Image_URL}
                           alt={car.Model}
                           className="w-[140px] h-[120px] object-contain mx-auto"
                         />
                       </td>
                       <td className="w-1/5 text-gray-500 text-center align-middle">
-                        {car.brand}
+                        {car.Brand}
                       </td>
                       <td className="w-2/5 text-center align-middle">
                         <div className="flex flex-col">
-                          <span>{car.model}</span>
+                          <span>{car.Model}</span>
                           <span className="text-sm text-mainblue mt-2">
-                            {car.estimated_THB_Value}
+                            {Math.round(car.Estimated_THB_Value).toLocaleString(
+                              "th-TH"
+                            )}{" "}
+                            บาท
                           </span>
-                        </div>{" "}
+                        </div>
                       </td>
                       <td className="text-sm">
                         <div className="flex flex-col">
@@ -228,9 +217,8 @@ export default function Evcardata() {
                           >
                             ข้อมูลเพิ่มเติม
                           </button>
-
                           <div className="flex flex-row shadow-lg justify-center items-center bg-mainblue text-white rounded">
-                            <a className="" href={car.website}>
+                            <a className="" href={car.Website}>
                               ไปยังเว็บไซต์
                             </a>
                             <svg
@@ -242,7 +230,7 @@ export default function Evcardata() {
                               className="size-2"
                             >
                               <path
-                                strokeinecap="round"
+                                strokeLinecap="round"
                                 strokeLinejoin="round"
                                 d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25"
                               />
@@ -254,18 +242,9 @@ export default function Evcardata() {
                   </tbody>
                 </table>
               </div>
-
-              {/* <div className="rounded-2x flex flex-col justify-center items-center m-4">
-                <p>{car.brand}</p>
-                <p>{car.model}</p>
-                <img
-                  src={car.ev_Image_URL}
-                  alt={car.Model}
-                  className="w-[50px] h-[40px] object-contain"
-                ></img>
-              </div> */}
             </div>
           ))}
+
           <div className="flex justify-center mt-2">
             {currentPage > 1 && (
               <button
@@ -316,12 +295,12 @@ export default function Evcardata() {
         <div className="font-prompt fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border p-6 w-3/4 rounded-lg shadow-lg">
           <div className="grid grid-cols-2">
             <div className="">
-              <p className="text-xl font-bold">{selectedCar.brand}</p>
-              <p className="text-lg mb-3">{selectedCar.model}</p>
-              <img src={selectedCar.ev_Image_URL}></img>
+              <p className="text-xl font-bold">{selectedCar.Brand}</p>
+              <p className="text-lg mb-3">{selectedCar.Model}</p>
+              <img src={selectedCar.EV_Image_URL}></img>
               <a
                 className="inline-flex items-center space-x-2 m-2 text-gray-400"
-                href={selectedCar.website}
+                href={selectedCar.Website}
               >
                 <span>ไปยังเว็บไซต์</span>
                 <svg
@@ -346,19 +325,19 @@ export default function Evcardata() {
                   <tr className="border-b">
                     <td className="px-2 py-2 text-mainblue">แบตเตอรี่</td>
                     <td className="px-2 py-2 text-gray-600">
-                      {selectedCar.battery}
+                      {selectedCar.Battery}
                     </td>
                   </tr>
                   <tr className="border-b">
                     <td className="px-2 py-2 text-mainblue">real_range</td>
                     <td className="px-2 py-2 text-gray-600">
-                      {selectedCar.real_range}
+                      {selectedCar.Real_Range}
                     </td>
                   </tr>
                   <tr className="border-b">
                     <td className="px-2 py-2 text-mainblue">fastcharge</td>
                     <td className="px-2 py-2 text-gray-600">
-                      {selectedCar.fastcharge}
+                      {selectedCar.Fastcharge}
                     </td>
                   </tr>
                   <tr className="border-b">
@@ -366,25 +345,25 @@ export default function Evcardata() {
                       drive configuration
                     </td>
                     <td className="px-2 py-2 text-gray-600 ">
-                      {selectedCar.drive_Configuration}
+                      {selectedCar.Drive_Configuration}
                     </td>
                   </tr>
                   <tr className="border-b">
                     <td className="px-2 py-2 text-mainblue">effieciency</td>
                     <td className="px-2 py-2 text-gray-600">
-                      {selectedCar.efficiency}
+                      {selectedCar.Efficiency}
                     </td>
                   </tr>
                   <tr className="border-b">
                     <td className="px-2 py-2 text-mainblue">accerlarate</td>
                     <td className="px-2 py-2 text-gray-600">
-                      {selectedCar.accelarate}
+                      {selectedCar.Accelarate}
                     </td>
                   </tr>
                   <tr>
                     <td className="px-2 py-2 text-mainblue">tow hitch</td>
                     <td className="px-2 py-2 text-gray-600">
-                      {selectedCar.tow_Hitch}
+                      {selectedCar.Tow_Hitch}
                     </td>
                   </tr>
                 </tbody>
@@ -393,21 +372,24 @@ export default function Evcardata() {
                 <div className="border border-gray-300 rounded-lg mx-2 p-2 bg-mainblue text-center shadow-md">
                   <span className="block text-white">ราคาโดยประมาณ</span>
                   <p className="text-lg text-mainblue bg-white rounded-lg">
-                    {selectedCar.estimated_THB_Value}
+                    {Math.round(selectedCar.Estimated_THB_Value).toLocaleString(
+                      "th-TH"
+                    )}
+                    {""}บาท
                   </p>
                 </div>
                 <div className="border border-gray-300 rounded-lg  mx-2 p-2 bg-mainblue text-center shadow-md">
                   <span className="block text-white">จำนวนที่นั่ง</span>
                   <p className="text-lg text-mainblue bg-white rounded-lg">
                     {" "}
-                    {selectedCar.number_of_seats}
+                    {selectedCar.Seats}
                   </p>
                 </div>
               </div>
               <span className="text-sm text-gray-400">
                 *ราคาที่ระบุเป็นเพียงประมาณการเบื้องต้น
                 กรุณาตรวจสอบราคาและข้อมูลที่แน่นอนจากเว็บไซต์เพื่อความถูกต้องและความแม่นยำ{" "}
-                <a href={selectedCar.website}>ไปที่เว็บไซต์</a>
+                <a href={selectedCar.Website}>ไปที่เว็บไซต์</a>
               </span>
             </div>
           </div>
@@ -445,7 +427,7 @@ export default function Evcardata() {
                 className="m-2 p-2 border rounded-lg"
                 onClick={() => handleDeSelectCarID(car)}
               >
-                {car.model}
+                {car.Model}
               </button>
             ))}
             <button
@@ -461,16 +443,15 @@ export default function Evcardata() {
       )}
       {isCompared && (
         <div
-          className="bg-white w-fit h-screen pt-20 mx-12"
+          className="bg-white w-5/6 h-full pt-20 mx-auto"
           id="section-comparefromdata"
         >
-          {/* <h5 className="text-center text-2xl font-bold text-black">
-            เปรียบเทียบรถยนต์ไฟฟ้า
-          </h5> */}
-
           <div className="flex flex-row text-gray-600">
             {selectedCarID.map((car) => (
-              <div key={car.id} className="px-6 py-3 border w-[300] mx-auto">
+              <div
+                key={car.Model_ID}
+                className="px-6 py-3 border w-[400px] mx-auto"
+              >
                 <div className="flex flex-row justify-end text-gray-600">
                   <button onClick={() => handleDeSelectCarID(car)}>
                     <svg
@@ -488,62 +469,71 @@ export default function Evcardata() {
                   </button>
                 </div>
                 <p className="text-center text-2xl text-mainblue">
-                  {car.brand}
+                  {car.Brand}
                 </p>
 
-                <p className="text-center text-xl text-mainblue">{car.model}</p>
+                <p className="text-center text-xl text-mainblue">{car.Model}</p>
 
                 <p className="text-center bg-mainblue rounded-lg ml-3 mt-3 text-lg text-white">
-                  {car.estimated_THB_Value}
+                  {Math.round(car.Estimated_THB_Value).toLocaleString("th-TH")}{" "}
+                  บาท
                 </p>
                 <img
-                  src={car.ev_Image_URL}
-                  className="w-1/3 h-auto mx-auto my-3"
+                  src={car.EV_Image_URL}
+                  className="w-30 h-30 object-cover mx-auto my-3"
                 ></img>
-                <div className="grid grid-cols-2 ">
-                  <p className="text-mainblue font-bold">จำนวนที่นั่ง</p>
-                  <p className="ml-6">{car?.number_of_seats ?? "N/A"}</p>
+                <div className="grid grid-cols-2 border-b">
+                  <p className="text-mainblue font-bold  my-2">จำนวนที่นั่ง</p>
+                  <p className="ml-6 my-2">{car?.Seats ?? "N/A"} ที่นั่ง</p>
                 </div>
-                <div className="grid grid-cols-2 ">
-                  <p className="text-mainblue font-bold">แบตเตอรี่</p>
-                  <p className="ml-6">{car?.battery ?? "N/A"}</p>
+                <div className="grid grid-cols-2 border-b my-2">
+                  <p className="text-mainblue font-bold  my-2">แบตเตอรี่</p>
+                  <p className="ml-6  my-2">
+                    {car?.Battery ?? "N/A"} กิโลวัตต์/ชั่วโมง
+                  </p>
                 </div>
-                <div className="grid grid-cols-2">
-                  <p className="text-mainblue font-bold">
+                <div className="grid grid-cols-2 border-b my-2">
+                  <p className="text-mainblue font-bold  my-2">
                     อัตราเร่ง (0 to 100 กม/ชม)
                   </p>
-                  <p className="ml-6">{car?.accelarate ?? "N/A"}</p>
+                  <p className="ml-6  my-2">
+                    {car?.Accelarate ?? "N/A"} วินาที
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-2">
+                <div className="grid grid-cols-2 border-b my-2">
                   <p className="text-mainblue font-bold">ระบบขับเคลื่อน</p>
-                  <p className="ml-6">{car?.drive_Configuration ?? "N/A"}</p>
+                  <p className="ml-6">{car?.Drive_Configuration ?? "N/A"}</p>
                 </div>
-                <div className="grid grid-cols-2">
+                <div className="grid grid-cols-2 border-b my-2">
                   <p className="text-mainblue font-bold">
-                    อัตราสิ้นเปลืองไฟฟ้า (Wh/km)
+                    อัตราสิ้นเปลืองไฟฟ้า
                   </p>
-                  <p className="ml-6">{car?.efficiency ?? "N/A"}</p>
+                  <p className="ml-6">
+                    {car?.Efficiency ?? "N/A"} Wh/ต่อกิโลเมตร
+                  </p>
                 </div>
-                <div className="grid grid-cols-2">
+                <div className="grid grid-cols-2 border-b my-2">
                   <p className="text-mainblue font-bold">ชาร์จเร็ว</p>
-                  <p className="ml-6">{car?.fastcharge ?? "N/A"}</p>
+                  <p className="ml-6">{car?.Fastcharge ?? "N/A"}</p>
                 </div>
-                <div className="grid grid-cols-2">
+                <div className="grid grid-cols-2 border-b my-2">
                   <p className="text-mainblue font-bold">
-                    ระยะทางที่รถสามารถวิ่งได้(Km)
+                    ระยะทางที่รถสามารถวิ่งได้
                   </p>
-                  <p className="ml-6">{car?.real_range ?? "N/A"}</p>
-                </div>
-                <div className="grid grid-cols-2">
-                  <p className="text-mainblue font-bold">
-                    ความเร็วสูงสุด(km/h)
+                  <p className="ml-6">
+                    {Math.round(car.Real_Range) ?? "N/A"} กิโลเมตร
                   </p>
-                  <p className="ml-6">{car?.top_Speed ?? "N/A"}</p>
                 </div>
-                <div className="grid grid-cols-2">
+                <div className="grid grid-cols-2 border-b my-2">
+                  <p className="text-mainblue font-bold">ความเร็วสูงสุด</p>
+                  <p className="ml-6">
+                    {car?.Top_Speed ?? "N/A"} กิโลเมตร/ชั่วโมง
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 my-2">
                   <p className="text-mainblue font-bold">อุปกรณ์ลากจูง</p>
-                  <p className="ml-6">{car?.tow_Hitch ?? "N/A"}</p>
+                  <p className="ml-6">{car?.Tow_Hitch ?? "N/A"}</p>
                 </div>
               </div>
             ))}
