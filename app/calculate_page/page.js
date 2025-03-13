@@ -35,6 +35,7 @@ export default function CalculatePage() {
   const [fuelConsumption, setFuelConsumption] = useState(0);
   const [fuelPrice, setFuelPrice] = useState(0);
   const [CarTypeOptions, setCarTypeOptions] = useState(0);
+  const [carTax, setCarText] = useState(0);
   const [seats, setSeats] = useState(0);
   const [weight, setWeight] = useState(0);
   const [carInsurance, setCarInsurance] = useState(0);
@@ -206,17 +207,19 @@ export default function CalculatePage() {
         fuelConsumption !== 0 ? distanceCompare / fuelConsumption : 0;
       const fuelCost = calculatedFuelLiter * fuelPrice;
       const totalFuelCost = fuelCost * 365 * selectedYear;
-      const carTaxPerYear = calculateCarTax(CarTypeOptions);
-      const totalCost =
-        totalFuelCost +
-        carTaxPerYear * selectedYear * selectedYear +
-        carInsurance;
-
+      
+      const carTaxPerYear = calculateCarTax(carTax);
+      const totalCarTax = carTaxPerYear * selectedYear; 
+      const totalInsurance = carInsurance * selectedYear; 
+  
+      const totalCost = totalFuelCost + totalCarTax + totalInsurance;
+  
       return totalCost;
     };
-
+  
     setTotalCost(calculateFuelCarLongTermCost());
-  }, [fuelConsumption, distanceCompare, fuelPrice, selectedYear, carInsurance]);
+  }, [fuelConsumption, distanceCompare, fuelPrice, selectedYear, carInsurance, carTax]);
+  
 
   useEffect(() => {
     const calculateEVCarLongTermCost = () => {
@@ -307,6 +310,7 @@ export default function CalculatePage() {
         setFuelConsumption(fuelEconomy);
         const insurance = selectedCar.Insurance_Price || 0;
         setCarInsurance(insurance);
+        setCarText(selectedCar.Engine_Displace || 0);
       }
     }
   }, [selectedModel2]);
