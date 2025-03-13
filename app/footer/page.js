@@ -3,7 +3,7 @@ import { useState } from "react";
 export default function Footer() {
   const [isModalOpen, setIModalOpen] = useState(false);
   const [emailData, setEmailData] = useState({
-    to: "saowalak.pri@kkumail.com,suebsak.sr@kkumail.com",
+    to: "saowalak.pri@kkumail.com,suebsak.s@kkumail.com",
     subject: "",
     text: "",
   });
